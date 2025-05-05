@@ -10,8 +10,8 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Segundo Cerebro | Para estudiantes de informática",
-  description: "Tu asistente personal para estudiar mejor y procrastinar menos",
+  title: "Segundo Cerebro",
+  description: "donde las piezas se reconocen entre sí.",
     generator: 'ImaaValenzuela'
 }
 

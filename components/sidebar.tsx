@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useMode } from "@/contexts/mode-context"
-import { LayoutDashboard, BookText, CheckSquare, BookOpen, Trash2 } from "lucide-react"
+import { LayoutDashboard, BookText, CheckSquare, BookOpen, Trash2, Calendar, GraduationCap } from "lucide-react"
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -28,6 +28,18 @@ export function Sidebar() {
       label: "Tareas",
       icon: CheckSquare,
       active: pathname === "/tareas",
+    },
+    {
+      href: "/calendario",
+      label: "Calendario",
+      icon: Calendar,
+      active: pathname === "/calendario",
+    },
+    {
+      href: "/examenes",
+      label: "Exámenes",
+      icon: GraduationCap,
+      active: pathname === "/examenes",
     },
     {
       href: "/estudio",
