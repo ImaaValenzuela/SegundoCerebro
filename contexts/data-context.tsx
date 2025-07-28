@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
+import { useAuth } from "@/contexts/auth-context"
 
 export interface Note {
   id: string
@@ -9,6 +10,7 @@ export interface Note {
   content: string
   date: string
   tags?: string[]
+  userId: string
 }
 
 export interface Task {
@@ -17,6 +19,7 @@ export interface Task {
   description: string
   completed: boolean
   dueDate: string
+  userId: string
 }
 
 export interface CalendarEvent {
@@ -26,6 +29,7 @@ export interface CalendarEvent {
   date: string // ISO string
   type: "tarea" | "entrega" | "proyecto" | "otro"
   color?: string
+  userId: string
 }
 
 export interface Exam {
@@ -38,6 +42,7 @@ export interface Exam {
   wayForward: string // Plan de acción (W de GROW)
   completed: boolean
   priority: "alta" | "media" | "baja"
+  userId: string
 }
 
 interface DataContextType {
@@ -45,17 +50,17 @@ interface DataContextType {
   tasks: Task[]
   events: CalendarEvent[]
   exams: Exam[]
-  addNote: (note: Omit<Note, "id" | "date">) => void
+  addNote: (note: Omit<Note, "id" | "date" | "userId">) => void
   updateNote: (id: string, note: Partial<Note>) => void
   deleteNote: (id: string) => void
-  addTask: (task: Omit<Task, "id" | "completed">) => void
+  addTask: (task: Omit<Task, "id" | "completed" | "userId">) => void
   updateTask: (id: string, task: Partial<Task>) => void
   deleteTask: (id: string) => void
   toggleTaskCompletion: (id: string) => void
-  addEvent: (event: Omit<CalendarEvent, "id">) => void
+  addEvent: (event: Omit<CalendarEvent, "id" | "userId">) => void
   updateEvent: (id: string, event: Partial<CalendarEvent>) => void
   deleteEvent: (id: string) => void
-  addExam: (exam: Omit<Exam, "id" | "completed">) => void
+  addExam: (exam: Omit<Exam, "id" | "completed" | "userId">) => void
   updateExam: (id: string, exam: Partial<Exam>) => void
   deleteExam: (id: string) => void
   toggleExamCompletion: (id: string) => void
@@ -83,81 +88,92 @@ const DataContext = createContext<DataContextType>({
 })
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
   const [notes, setNotes] = useState<Note[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [exams, setExams] = useState<Exam[]>([])
 
-  // Cargar datos al iniciar
+  // Cargar datos al iniciar o cuando cambia el usuario
   useEffect(() => {
-    const savedNotes = localStorage.getItem("segundo-cerebro-notes")
-    const savedTasks = localStorage.getItem("segundo-cerebro-tasks")
-    const savedEvents = localStorage.getItem("segundo-cerebro-events")
-    const savedExams = localStorage.getItem("segundo-cerebro-exams")
+    if (!user) {
+      // Limpiar datos si no hay usuario
+      setNotes([])
+      setTasks([])
+      setEvents([])
+      setExams([])
+      return
+    }
 
-    if (savedNotes) {
+    const loadData = () => {
       try {
-        setNotes(JSON.parse(savedNotes))
+        // Cargar todos los datos
+        const allNotes: Note[] = JSON.parse(localStorage.getItem("segundo-cerebro-notes") || "[]")
+        const allTasks: Task[] = JSON.parse(localStorage.getItem("segundo-cerebro-tasks") || "[]")
+        const allEvents: CalendarEvent[] = JSON.parse(localStorage.getItem("segundo-cerebro-events") || "[]")
+        const allExams: Exam[] = JSON.parse(localStorage.getItem("segundo-cerebro-exams") || "[]")
+
+        // Filtrar por usuario actual
+        setNotes(allNotes.filter((note) => note.userId === user.id))
+        setTasks(allTasks.filter((task) => task.userId === user.id))
+        setEvents(allEvents.filter((event) => event.userId === user.id))
+        setExams(allExams.filter((exam) => exam.userId === user.id))
       } catch (error) {
-        console.error("Error al cargar notas:", error)
+        console.error("Error al cargar datos:", error)
       }
     }
 
-    if (savedTasks) {
-      try {
-        setTasks(JSON.parse(savedTasks))
-      } catch (error) {
-        console.error("Error al cargar tareas:", error)
-      }
-    }
-
-    if (savedEvents) {
-      try {
-        setEvents(JSON.parse(savedEvents))
-      } catch (error) {
-        console.error("Error al cargar eventos:", error)
-      }
-    }
-
-    if (savedExams) {
-      try {
-        setExams(JSON.parse(savedExams))
-      } catch (error) {
-        console.error("Error al cargar exámenes:", error)
-      }
-    }
-  }, [])
+    loadData()
+  }, [user])
 
   // Guardar datos cuando cambien
   useEffect(() => {
+    if (!user) return
+
+    const saveData = (key: string, data: any[]) => {
+      try {
+        // Cargar todos los datos existentes
+        const allData = JSON.parse(localStorage.getItem(key) || "[]")
+
+        // Filtrar los datos que no son del usuario actual
+        const otherUsersData = allData.filter((item: any) => item.userId !== user.id)
+
+        // Combinar con los datos actuales del usuario
+        const newData = [...otherUsersData, ...data]
+
+        // Guardar todo
+        localStorage.setItem(key, JSON.stringify(newData))
+      } catch (error) {
+        console.error(`Error al guardar ${key}:`, error)
+      }
+    }
+
     if (notes.length > 0) {
-      localStorage.setItem("segundo-cerebro-notes", JSON.stringify(notes))
+      saveData("segundo-cerebro-notes", notes)
     }
-  }, [notes])
 
-  useEffect(() => {
     if (tasks.length > 0) {
-      localStorage.setItem("segundo-cerebro-tasks", JSON.stringify(tasks))
+      saveData("segundo-cerebro-tasks", tasks)
     }
-  }, [tasks])
 
-  useEffect(() => {
     if (events.length > 0) {
-      localStorage.setItem("segundo-cerebro-events", JSON.stringify(events))
+      saveData("segundo-cerebro-events", events)
     }
-  }, [events])
 
-  useEffect(() => {
     if (exams.length > 0) {
-      localStorage.setItem("segundo-cerebro-exams", JSON.stringify(exams))
+      saveData("segundo-cerebro-exams", exams)
     }
-  }, [exams])
+  }, [notes, tasks, events, exams, user])
 
-  const addNote = (note: Omit<Note, "id" | "date">) => {
+  const addNote = (note: Omit<Note, "id" | "date" | "userId">) => {
+    if (!user) return
+
     const newNote: Note = {
       ...note,
       id: Date.now().toString(),
       date: new Date().toISOString(),
+      tags: note.tags || [],
+      userId: user.id,
     }
     setNotes((prev) => [...prev, newNote])
   }
@@ -170,11 +186,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setNotes((prev) => prev.filter((n) => n.id !== id))
   }
 
-  const addTask = (task: Omit<Task, "id" | "completed">) => {
+  const addTask = (task: Omit<Task, "id" | "completed" | "userId">) => {
+    if (!user) return
+
     const newTask: Task = {
       ...task,
       id: Date.now().toString(),
       completed: false,
+      userId: user.id,
     }
     setTasks((prev) => [...prev, newTask])
   }
@@ -191,10 +210,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)))
   }
 
-  const addEvent = (event: Omit<CalendarEvent, "id">) => {
+  const addEvent = (event: Omit<CalendarEvent, "id" | "userId">) => {
+    if (!user) return
+
     const newEvent: CalendarEvent = {
       ...event,
       id: Date.now().toString(),
+      userId: user.id,
     }
     setEvents((prev) => [...prev, newEvent])
   }
@@ -207,11 +229,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setEvents((prev) => prev.filter((e) => e.id !== id))
   }
 
-  const addExam = (exam: Omit<Exam, "id" | "completed">) => {
+  const addExam = (exam: Omit<Exam, "id" | "completed" | "userId">) => {
+    if (!user) return
+
     const newExam: Exam = {
       ...exam,
       id: Date.now().toString(),
       completed: false,
+      userId: user.id,
     }
     setExams((prev) => [...prev, newExam])
   }

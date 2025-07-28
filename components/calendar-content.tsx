@@ -1,46 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { useData } from "@/contexts/data-context"
 import { CalendarView } from "@/components/calendar/calendar-view"
-import {
-  format,
-  parseISO,
-  startOfMonth,
-  endOfMonth,
-  addMonths,
-  subMonths,
-} from "date-fns"
+import { format, parseISO, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns"
 import { es } from "date-fns/locale"
-import { Plus, X, ChevronLeft, ChevronRight } from "lucide-react"
-
-type EventType = "tarea" | "entrega" | "proyecto" | "otro"
-
-interface CalendarEvent {
-  title: string
-  description: string
-  date: string
-  type: EventType
-}
+import { CalendarIcon, Plus, X, ChevronLeft, ChevronRight } from "lucide-react"
 
 export function CalendarContent() {
   const { toast } = useToast()
@@ -49,12 +20,11 @@ export function CalendarContent() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [showEventForm, setShowEventForm] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
-
-  const [newEvent, setNewEvent] = useState<CalendarEvent>({
+  const [newEvent, setNewEvent] = useState({
     title: "",
     description: "",
     date: "",
-    type: "tarea",
+    type: "tarea" as const,
   })
 
   const handlePrevMonth = () => {
@@ -67,7 +37,10 @@ export function CalendarContent() {
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date)
-    setNewEvent({ ...newEvent, date: format(date, "yyyy-MM-dd") })
+    setNewEvent({
+      ...newEvent,
+      date: format(date, "yyyy-MM-dd"),
+    })
   }
 
   const handleAddEvent = () => {
@@ -119,8 +92,8 @@ export function CalendarContent() {
       setNewEvent({
         title: event.title,
         description: event.description,
-        date: event.date.split("T")[0],
-        type: event.type as EventType,
+        date: event.date.split("T")[0], // Extraer solo la fecha
+        type: event.type,
       })
       setSelectedEvent(eventId)
       setShowEventForm(true)
@@ -162,9 +135,7 @@ export function CalendarContent() {
         </Button>
       </div>
 
-      {/* CONTENIDO PRINCIPAL */}
       <div className="grid gap-4 md:grid-cols-3">
-        {/* CALENDARIO */}
         <div className="md:col-span-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -192,7 +163,6 @@ export function CalendarContent() {
           </Card>
         </div>
 
-        {/* FORMULARIO / EVENTOS */}
         <div>
           {showEventForm ? (
             <Card>
@@ -239,7 +209,7 @@ export function CalendarContent() {
                   </label>
                   <Select
                     value={newEvent.type}
-                    onValueChange={(value: EventType) =>
+                    onValueChange={(value: "tarea" | "entrega" | "proyecto" | "otro") =>
                       setNewEvent({ ...newEvent, type: value })
                     }
                   >
@@ -325,26 +295,55 @@ export function CalendarContent() {
                               event.type === "tarea"
                                 ? "bg-blue-500"
                                 : event.type === "entrega"
-                                ? "bg-red-500"
-                                : event.type === "proyecto"
-                                ? "bg-green-500"
-                                : "bg-gray-500"
+                                  ? "bg-red-500"
+                                  : event.type === "proyecto"
+                                    ? "bg-green-500"
+                                    : "bg-gray-500"
                             }`}
                           ></span>
                           <h4 className="font-medium">{event.title}</h4>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {event.description}
-                        </p>
+                        <p className="text-sm text-muted-foreground">{event.description}</p>
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          <span className="capitalize">{event.type}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No hay eventos</p>
+                  <p className="text-sm text-muted-foreground">No hay eventos para este día</p>
                 )}
               </CardContent>
+              <CardFooter>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setNewEvent({
+                      ...newEvent,
+                      date: format(selectedDate, "yyyy-MM-dd"),
+                    })
+                    setShowEventForm(true)
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Añadir evento
+                </Button>
+              </CardFooter>
             </Card>
-          ) : null}
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Eventos</CardTitle>
+                <CardDescription>Selecciona una fecha para ver o añadir eventos</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center justify-center py-8">
+                <CalendarIcon className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-sm text-muted-foreground text-center">
+                  Haz clic en una fecha del calendario para ver los eventos o añadir uno nuevo
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

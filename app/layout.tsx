@@ -5,14 +5,15 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ModeProvider } from "@/contexts/mode-context"
 import { DataProvider } from "@/contexts/data-context"
+import { AuthProvider } from "@/contexts/auth-context"
 import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Segundo Cerebro",
-  description: "donde las piezas se reconocen entre sí.",
-    generator: 'ImaaValenzuela'
+  title: "Segundo Cerebro | Para estudiantes de informática",
+  description: "Tu asistente personal para estudiar mejor y procrastinar menos",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -33,12 +34,14 @@ export default function RootLayout({
           disableTransitionOnChange={false}
           storageKey="segundo-cerebro-theme"
         >
-          <ModeProvider>
-            <DataProvider>
-              {children}
-              <Toaster />
-            </DataProvider>
-          </ModeProvider>
+          <AuthProvider>
+            <ModeProvider>
+              <DataProvider>
+                {children}
+                <Toaster />
+              </DataProvider>
+            </ModeProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

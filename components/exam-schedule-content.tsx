@@ -15,36 +15,22 @@ import { GraduationCap, Plus, Check, X, Target, Lightbulb, List, ArrowRight } fr
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 
-type Priority = "alta" | "media" | "baja"
-
-interface Exam {
-    subject: string
-    date: string
-    goal: string
-    reality: string
-    options: string[]
-    wayForward: string
-    priority: Priority
-  }
-
 export function ExamScheduleContent() {
-    const { toast } = useToast()
-    const { exams, addExam, updateExam, deleteExam, toggleExamCompletion } = useData()
-  
-    const [activeTab, setActiveTab] = useState("todos")
-    const [showExamForm, setShowExamForm] = useState(false)
-    const [currentStep, setCurrentStep] = useState(1)
-    const [selectedExam, setSelectedExam] = useState<string | null>(null)
-  
-    const [newExam, setNewExam] = useState<Exam>({
-      subject: "",
-      date: "",
-      goal: "",
-      reality: "",
-      options: [""],
-      wayForward: "",
-      priority: "media",
-    })
+  const { toast } = useToast()
+  const { exams, addExam, updateExam, deleteExam, toggleExamCompletion, addEvent } = useData()
+  const [activeTab, setActiveTab] = useState("todos")
+  const [showExamForm, setShowExamForm] = useState(false)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [selectedExam, setSelectedExam] = useState<string | null>(null)
+  const [newExam, setNewExam] = useState({
+    subject: "",
+    date: "",
+    goal: "",
+    reality: "",
+    options: [""],
+    wayForward: "",
+    priority: "media" as const,
+  })
 
   const handleAddOption = () => {
     setNewExam({
@@ -134,15 +120,28 @@ export function ExamScheduleContent() {
 
     if (selectedExam) {
       updateExam(selectedExam, newExam)
+
+      // Actualizar evento en calendario (no implementado directamente, se podría añadir)
       toast({
         title: "Examen actualizado",
         description: "El examen ha sido actualizado correctamente",
       })
     } else {
+      // Añadir examen
       addExam(newExam)
+
+      // Añadir automáticamente al calendario
+      addEvent({
+        title: `Examen: ${newExam.subject}`,
+        description: `Examen de ${newExam.subject}. Prioridad: ${newExam.priority}`,
+        date: newExam.date,
+        type: "otro",
+        color: newExam.priority === "alta" ? "#ef4444" : newExam.priority === "media" ? "#f59e0b" : "#22c55e",
+      })
+
       toast({
         title: "Examen añadido",
-        description: "El examen ha sido añadido correctamente",
+        description: "El examen ha sido añadido correctamente y se ha creado un evento en el calendario",
       })
     }
 

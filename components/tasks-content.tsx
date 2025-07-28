@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Search, Plus, Clock, CheckSquare } from "lucide-react"
-import { PomodoroTimer } from "@/components/pomodoro-timer"
 import { useData } from "@/contexts/data-context"
 
 export function TasksContent() {
@@ -165,15 +164,6 @@ export function TasksContent() {
         </div>
 
         <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Pomodoro</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <PomodoroTimer />
-            </CardContent>
-          </Card>
-
           {completedTasks.length > 0 && (
             <Card className="mt-4">
               <CardHeader>
@@ -181,7 +171,7 @@ export function TasksContent() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {completedTasks.slice(0, 3).map((task) => (
+                  {completedTasks.slice(0, 5).map((task) => (
                     <div key={task.id} className="flex items-center gap-2">
                       <Checkbox
                         id={`completed-${task.id}`}
@@ -193,9 +183,9 @@ export function TasksContent() {
                       </label>
                     </div>
                   ))}
-                  {completedTasks.length > 3 && (
+                  {completedTasks.length > 5 && (
                     <p className="text-xs text-muted-foreground text-center mt-2">
-                      +{completedTasks.length - 3} tareas más
+                      +{completedTasks.length - 5} tareas más
                     </p>
                   )}
                 </div>
