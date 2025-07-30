@@ -29,7 +29,7 @@ export function ExamScheduleContent() {
     reality: "",
     options: [""],
     wayForward: "",
-    priority: "media" as const,
+    priority: "media" as "alta" | "media" | "baja",
   })
 
   const handleAddOption = () => {
@@ -108,7 +108,7 @@ export function ExamScheduleContent() {
     }
   }
 
-  const handleSaveExam = () => {
+  const handleSaveExam = async () => {
     if (!newExam.wayForward.trim()) {
       toast({
         title: "Error",
@@ -118,45 +118,54 @@ export function ExamScheduleContent() {
       return
     }
 
-    if (selectedExam) {
-      updateExam(selectedExam, newExam)
+    try {
+      if (selectedExam) {
+        await updateExam(selectedExam, newExam)
 
-      // Actualizar evento en calendario (no implementado directamente, se podría añadir)
-      toast({
-        title: "Examen actualizado",
-        description: "El examen ha sido actualizado correctamente",
+        // Actualizar evento en calendario (no implementado directamente, se podría añadir)
+        toast({
+          title: "Examen actualizado",
+          description: "El examen ha sido actualizado correctamente",
+        })
+      } else {
+        // Añadir examen
+        await addExam(newExam)
+
+        // Añadir automáticamente al calendario
+        await addEvent({
+          title: `Examen: ${newExam.subject}`,
+          description: `Examen de ${newExam.subject}. Prioridad: ${newExam.priority}`,
+          date: newExam.date,
+          type: "otro",
+          color: newExam.priority === "alta" ? "#ef4444" : newExam.priority === "media" ? "#f59e0b" : "#22c55e",
+        })
+
+        toast({
+          title: "Examen añadido",
+          description: "El examen ha sido añadido correctamente y se ha creado un evento en el calendario",
+        })
+      }
+
+      setNewExam({
+        subject: "",
+        date: "",
+        goal: "",
+        reality: "",
+        options: [""],
+        wayForward: "",
+        priority: "media",
       })
-    } else {
-      // Añadir examen
-      addExam(newExam)
-
-      // Añadir automáticamente al calendario
-      addEvent({
-        title: `Examen: ${newExam.subject}`,
-        description: `Examen de ${newExam.subject}. Prioridad: ${newExam.priority}`,
-        date: newExam.date,
-        type: "otro",
-        color: newExam.priority === "alta" ? "#ef4444" : newExam.priority === "media" ? "#f59e0b" : "#22c55e",
-      })
-
+      setShowExamForm(false)
+      setSelectedExam(null)
+      setCurrentStep(1)
+    } catch (error) {
+      console.error("Error al guardar examen:", error)
       toast({
-        title: "Examen añadido",
-        description: "El examen ha sido añadido correctamente y se ha creado un evento en el calendario",
+        title: "Error",
+        description: "No se pudo guardar el examen. Verifica tu conexión e intenta de nuevo.",
+        variant: "destructive",
       })
     }
-
-    setNewExam({
-      subject: "",
-      date: "",
-      goal: "",
-      reality: "",
-      options: [""],
-      wayForward: "",
-      priority: "media",
-    })
-    setShowExamForm(false)
-    setSelectedExam(null)
-    setCurrentStep(1)
   }
 
   const handleEditExam = (examId: string) => {

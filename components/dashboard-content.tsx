@@ -9,6 +9,8 @@ import Link from "next/link"
 import { useData } from "@/contexts/data-context"
 import { format, parseISO, isAfter, isBefore, addDays } from "date-fns"
 import { es } from "date-fns/locale"
+import { UserDebug } from "@/components/user-debug"
+import { GoogleAuthDebug } from "@/components/google-auth-debug"
 
 export function DashboardContent() {
   const { notes, tasks, events, exams } = useData()
@@ -62,6 +64,9 @@ export function DashboardContent() {
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
+
+      <UserDebug />
+      <GoogleAuthDebug />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>

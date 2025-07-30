@@ -65,7 +65,7 @@ export function NotesContent() {
     })
   }
 
-  const handleCreateNote = () => {
+  const handleCreateNote = async () => {
     if (newNote.title.trim() === "" || newNote.content.trim() === "") {
       toast({
         title: "Error",
@@ -75,32 +75,41 @@ export function NotesContent() {
       return
     }
 
-    if (selectedNote && showEditNote) {
-      updateNote(selectedNote, {
-        title: newNote.title,
-        content: newNote.content,
-        tags: newNote.tags,
-      })
-      toast({
-        title: "Nota actualizada",
-        description: "Tu nota ha sido actualizada correctamente",
-      })
-      setShowEditNote(false)
-    } else {
-      addNote({
-        title: newNote.title,
-        content: newNote.content,
-        tags: newNote.tags,
-      })
-      toast({
-        title: "Nota creada",
-        description: "Tu nota ha sido guardada correctamente",
-      })
-      setShowNewNote(false)
-    }
+    try {
+      if (selectedNote && showEditNote) {
+        await updateNote(selectedNote, {
+          title: newNote.title,
+          content: newNote.content,
+          tags: newNote.tags,
+        })
+        toast({
+          title: "Nota actualizada",
+          description: "Tu nota ha sido actualizada correctamente",
+        })
+        setShowEditNote(false)
+      } else {
+        await addNote({
+          title: newNote.title,
+          content: newNote.content,
+          tags: newNote.tags,
+        })
+        toast({
+          title: "Nota creada",
+          description: "Tu nota ha sido guardada correctamente",
+        })
+        setShowNewNote(false)
+      }
 
-    setNewNote({ title: "", content: "", tags: [] })
-    setSelectedNote(null)
+      setNewNote({ title: "", content: "", tags: [] })
+      setSelectedNote(null)
+    } catch (error) {
+      console.error("Error al crear/actualizar nota:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la nota. Verifica tu conexión e intenta de nuevo.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleViewNote = (noteId: string) => {

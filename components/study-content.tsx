@@ -49,7 +49,7 @@ export function StudyContent() {
     }
   }
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
     if (!noteContent.trim()) {
       toast({
         title: "Error",
@@ -59,40 +59,49 @@ export function StudyContent() {
       return
     }
 
-    // Extraer el título de la primera línea o usar un título genérico
-    const lines = noteContent.split("\n")
-    const title = lines[0].trim() || "Nota de estudio"
-    const content = lines.length > 1 ? lines.slice(1).join("\n").trim() : noteContent
+    try {
+      // Extraer el título de la primera línea o usar un título genérico
+      const lines = noteContent.split("\n")
+      const title = lines[0].trim() || "Nota de estudio"
+      const content = lines.length > 1 ? lines.slice(1).join("\n").trim() : noteContent
 
-    // Determinar etiquetas automáticamente
-    const defaultTags = ["estudio"]
+      // Determinar etiquetas automáticamente
+      const defaultTags = ["estudio"]
 
-    // Detectar tema basándose en palabras clave
-    const contentLower = content.toLowerCase()
-    if (
-      contentLower.includes("programación") ||
-      contentLower.includes("código") ||
-      contentLower.includes("función") ||
-      contentLower.includes("variable")
-    ) {
-      defaultTags.push("programación")
+      // Detectar tema basándose en palabras clave
+      const contentLower = content.toLowerCase()
+      if (
+        contentLower.includes("programación") ||
+        contentLower.includes("código") ||
+        contentLower.includes("función") ||
+        contentLower.includes("variable")
+      ) {
+        defaultTags.push("programación")
+      }
+      if (contentLower.includes("matemática") || contentLower.includes("fórmula") || contentLower.includes("ecuación")) {
+        defaultTags.push("matemáticas")
+      }
+
+      await addNote({
+        title,
+        content: content || title,
+        tags: defaultTags,
+      })
+
+      toast({
+        title: "Nota guardada",
+        description: "Tu nota ha sido guardada en la sección de notas",
+      })
+
+      setLastSaved(new Date())
+    } catch (error) {
+      console.error("Error al guardar nota:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la nota. Verifica tu conexión e intenta de nuevo.",
+        variant: "destructive",
+      })
     }
-    if (contentLower.includes("matemática") || contentLower.includes("fórmula") || contentLower.includes("ecuación")) {
-      defaultTags.push("matemáticas")
-    }
-
-    addNote({
-      title,
-      content: content || title,
-      tags: defaultTags,
-    })
-
-    toast({
-      title: "Nota guardada",
-      description: "Tu nota ha sido guardada en la sección de notas",
-    })
-
-    setLastSaved(new Date())
   }
 
   return (

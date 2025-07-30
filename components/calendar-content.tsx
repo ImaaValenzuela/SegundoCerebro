@@ -24,7 +24,7 @@ export function CalendarContent() {
     title: "",
     description: "",
     date: "",
-    type: "tarea" as const,
+    type: "tarea" as "tarea" | "entrega" | "proyecto" | "otro",
   })
 
   const handlePrevMonth = () => {
@@ -43,7 +43,7 @@ export function CalendarContent() {
     })
   }
 
-  const handleAddEvent = () => {
+  const handleAddEvent = async () => {
     if (!newEvent.title.trim()) {
       toast({
         title: "Error",
@@ -62,28 +62,37 @@ export function CalendarContent() {
       return
     }
 
-    if (selectedEvent) {
-      updateEvent(selectedEvent, newEvent)
-      toast({
-        title: "Evento actualizado",
-        description: "El evento ha sido actualizado correctamente",
+    try {
+      if (selectedEvent) {
+        await updateEvent(selectedEvent, newEvent)
+        toast({
+          title: "Evento actualizado",
+          description: "El evento ha sido actualizado correctamente",
+        })
+      } else {
+        await addEvent(newEvent)
+        toast({
+          title: "Evento añadido",
+          description: "El evento ha sido añadido correctamente",
+        })
+      }
+
+      setNewEvent({
+        title: "",
+        description: "",
+        date: "",
+        type: "tarea",
       })
-    } else {
-      addEvent(newEvent)
+      setShowEventForm(false)
+      setSelectedEvent(null)
+    } catch (error) {
+      console.error("Error al guardar evento:", error)
       toast({
-        title: "Evento añadido",
-        description: "El evento ha sido añadido correctamente",
+        title: "Error",
+        description: "No se pudo guardar el evento. Verifica tu conexión e intenta de nuevo.",
+        variant: "destructive",
       })
     }
-
-    setNewEvent({
-      title: "",
-      description: "",
-      date: "",
-      type: "tarea",
-    })
-    setShowEventForm(false)
-    setSelectedEvent(null)
   }
 
   const handleEditEvent = (eventId: string) => {

@@ -138,13 +138,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = async (): Promise<boolean> => {
     try {
+      console.log("Iniciando autenticación con Google...")
+      
       const result = await signInWithPopup(auth, googleProvider)
       const firebaseUser = result.user
+
+      console.log("Usuario autenticado con Google:", firebaseUser.email)
 
       // Verificar si el usuario ya existe en Firestore
       const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
       
       if (!userDoc.exists()) {
+        console.log("Creando nuevo usuario en Firestore...")
         // Crear documento del usuario en Firestore si es nuevo
         await setDoc(doc(db, "users", firebaseUser.uid), {
           name: firebaseUser.displayName || "Usuario",
@@ -152,11 +157,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })
+        console.log("Usuario creado en Firestore exitosamente")
+      } else {
+        console.log("Usuario ya existe en Firestore")
       }
 
       return true
     } catch (error: any) {
       console.error("Error al iniciar sesión con Google:", error)
+      
+      // Manejar errores específicos de Google Auth
+      if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error('El inicio de sesión fue cancelado por el usuario')
+      } else if (error.code === 'auth/popup-blocked') {
+        throw new Error('El popup fue bloqueado por el navegador. Por favor, permite popups para este sitio')
+      } else if (error.code === 'auth/unauthorized-domain') {
+        throw new Error('Este dominio no está autorizado para la autenticación con Google')
+      } else if (error.code === 'auth/network-request-failed') {
+        throw new Error('Error de conexión. Verifica tu conexión a internet')
+      }
+      
       throw new Error(getErrorMessage(error))
     }
   }

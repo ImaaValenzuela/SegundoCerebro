@@ -16,7 +16,7 @@ export function TasksContent() {
   const [showNewTask, setShowNewTask] = useState(false)
   const [newTask, setNewTask] = useState({ title: "", description: "", dueDate: "" })
 
-  const handleCreateTask = () => {
+  const handleCreateTask = async () => {
     if (newTask.title.trim() === "") {
       toast({
         title: "Error",
@@ -26,19 +26,28 @@ export function TasksContent() {
       return
     }
 
-    addTask({
-      title: newTask.title,
-      description: newTask.description,
-      dueDate: newTask.dueDate || "Sin fecha",
-    })
+    try {
+      await addTask({
+        title: newTask.title,
+        description: newTask.description,
+        dueDate: newTask.dueDate || "Sin fecha",
+      })
 
-    toast({
-      title: "Tarea creada",
-      description: "Tu tarea ha sido guardada correctamente",
-    })
+      toast({
+        title: "Tarea creada",
+        description: "Tu tarea ha sido guardada correctamente",
+      })
 
-    setNewTask({ title: "", description: "", dueDate: "" })
-    setShowNewTask(false)
+      setNewTask({ title: "", description: "", dueDate: "" })
+      setShowNewTask(false)
+    } catch (error) {
+      console.error("Error al crear tarea:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la tarea. Verifica tu conexión e intenta de nuevo.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleToggleTaskCompletion = (id: string) => {

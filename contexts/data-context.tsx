@@ -115,7 +115,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [user])
 
   const addNote = async (note: Omit<Note, "id" | "date" | "userId">) => {
-    if (!user) return
+    if (!user) {
+      console.error("No hay usuario autenticado")
+      return
+    }
 
     try {
       const noteData = {
@@ -134,6 +137,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setNotes((prev) => [newNote, ...prev])
     } catch (error) {
       console.error("Error al agregar nota:", error)
+      throw error
     }
   }
 
@@ -156,7 +160,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }
 
   const addTask = async (task: Omit<Task, "id" | "completed" | "userId">) => {
-    if (!user) return
+    if (!user) {
+      console.error("No hay usuario autenticado")
+      return
+    }
 
     try {
       const taskData = {
@@ -174,6 +181,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setTasks((prev) => [newTask, ...prev])
     } catch (error) {
       console.error("Error al agregar tarea:", error)
+      throw error
     }
   }
 
@@ -208,7 +216,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }
 
   const addEvent = async (event: Omit<CalendarEvent, "id" | "userId">) => {
-    if (!user) return
+    if (!user) {
+      console.error("No hay usuario autenticado")
+      return
+    }
 
     try {
       const eventData = {
@@ -225,6 +236,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setEvents((prev) => [newEvent, ...prev])
     } catch (error) {
       console.error("Error al agregar evento:", error)
+      throw error
     }
   }
 
@@ -247,7 +259,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }
 
   const addExam = async (exam: Omit<Exam, "id" | "completed" | "userId">) => {
-    if (!user) return
+    if (!user) {
+      console.error("No hay usuario autenticado")
+      return
+    }
 
     try {
       const examData = {
@@ -265,6 +280,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setExams((prev) => [newExam, ...prev])
     } catch (error) {
       console.error("Error al agregar examen:", error)
+      throw error
     }
   }
 
