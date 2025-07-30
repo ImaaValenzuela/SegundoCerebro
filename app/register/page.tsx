@@ -1,16 +1,11 @@
 import type { Metadata } from "next"
-import { RegisterForm } from "@/components/register-form"
-import { AuthLayout } from "@/components/auth-layout"
+import { AuthPage } from "@/components/auth-page"
 
 export const metadata: Metadata = {
-  title: "Registro | Segundo Cerebro",
-  description: "Crea una cuenta en Segundo Cerebro",
+  title: "Autenticación | Segundo Cerebro",
+  description: "Inicia sesión o crea una cuenta en Segundo Cerebro",
 }
 
 export default function RegisterPage() {
-  return (
-    <AuthLayout>
-      <RegisterForm />
-    </AuthLayout>
-  )
+  return <AuthPage />
 }

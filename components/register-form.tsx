@@ -8,8 +8,10 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
+import { GoogleLoginButton } from "@/components/ui/google-login-button"
 import { BookOpen } from "lucide-react"
 
 export function RegisterForm() {
@@ -46,25 +48,16 @@ export function RegisterForm() {
     setIsLoading(true)
 
     try {
-      const success = await register(name, email, password)
-
-      if (success) {
-        toast({
-          title: "Registro exitoso",
-          description: "Tu cuenta ha sido creada correctamente",
-        })
-        router.push("/dashboard")
-      } else {
-        toast({
-          title: "Error",
-          description: "El correo electrónico ya está en uso",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
+      await register(name, email, password)
+      toast({
+        title: "Registro exitoso",
+        description: "Tu cuenta ha sido creada correctamente",
+      })
+      router.push("/dashboard")
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Ocurrió un error al crear la cuenta",
+        description: error.message || "Ocurrió un error al crear la cuenta",
         variant: "destructive",
       })
     } finally {
@@ -132,6 +125,20 @@ export function RegisterForm() {
             {isLoading ? "Creando cuenta..." : "Crear cuenta"}
           </Button>
         </form>
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <Separator className="w-full" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">O continúa con</span>
+          </div>
+        </div>
+
+        <GoogleLoginButton 
+          className="w-full" 
+          onSuccess={() => router.push("/dashboard")}
+        />
       </CardContent>
       <CardFooter className="flex flex-col space-y-4">
         <div className="text-sm text-center text-muted-foreground">

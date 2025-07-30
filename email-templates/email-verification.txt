@@ -1,0 +1,29 @@
+¡Bienvenido a Segundo Cerebro!
+==============================
+
+Hola,
+
+Gracias por registrarte en Segundo Cerebro. Para completar tu registro y acceder a todas las funcionalidades, necesitamos verificar tu dirección de email.
+
+Haz clic en el siguiente enlace para verificar tu cuenta:
+
+{{link}}
+
+🎉 ¡Comienza tu viaje de aprendizaje!
+
+Una vez verificado tu email, podrás acceder a todas las herramientas:
+- Notas y apuntes
+- Gestión de tareas
+- Calendario de eventos
+- Planificación de exámenes
+- Y mucho más
+
+Si el enlace no funciona, copia y pega la URL completa en tu navegador.
+
+Este email fue enviado a: {{email}}
+
+Si no creaste esta cuenta, puedes ignorar este email de forma segura.
+
+---
+© 2024 Segundo Cerebro. Todos los derechos reservados.
+🧠 Tu asistente personal para el aprendizaje 

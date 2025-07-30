@@ -8,8 +8,11 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
+import { GoogleLoginButton } from "@/components/ui/google-login-button"
+import { ResetPasswordDialog } from "@/components/ui/reset-password-dialog"
 import { BookOpen } from "lucide-react"
 
 export function LoginForm() {
@@ -35,25 +38,16 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
-      const success = await login(email, password)
-
-      if (success) {
-        toast({
-          title: "Inicio de sesión exitoso",
-          description: "Bienvenido a Segundo Cerebro",
-        })
-        router.push("/dashboard")
-      } else {
-        toast({
-          title: "Error",
-          description: "Credenciales incorrectas",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
+      await login(email, password)
+      toast({
+        title: "Inicio de sesión exitoso",
+        description: "Bienvenido a Segundo Cerebro",
+      })
+      router.push("/dashboard")
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Ocurrió un error al iniciar sesión",
+        description: error.message || "Ocurrió un error al iniciar sesión",
         variant: "destructive",
       })
     } finally {
@@ -90,9 +84,13 @@ export function LoginForm() {
               <label htmlFor="password" className="text-sm font-medium">
                 Contraseña
               </label>
-              <Link href="#" className="text-xs text-primary hover:underline">
-                ¿Olvidaste tu contraseña?
-              </Link>
+              <ResetPasswordDialog 
+                trigger={
+                  <button type="button" className="text-xs text-primary hover:underline">
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                }
+              />
             </div>
             <Input
               id="password"
@@ -107,6 +105,20 @@ export function LoginForm() {
             {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
           </Button>
         </form>
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <Separator className="w-full" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">O continúa con</span>
+          </div>
+        </div>
+
+        <GoogleLoginButton 
+          className="w-full" 
+          onSuccess={() => router.push("/dashboard")}
+        />
       </CardContent>
       <CardFooter className="flex flex-col space-y-4">
         <div className="text-sm text-center text-muted-foreground">

@@ -2,6 +2,24 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  type User as FirebaseUser,
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  sendPasswordResetEmail
+} from "firebase/auth"
+import { doc, setDoc, getDoc } from "firebase/firestore"
+import { auth, db } from "@/lib/firebase"
+import { googleProvider } from "@/lib/google-auth-config"
+import { getActionCodeSettings } from "@/lib/password-reset-config"
+import { useFirebaseError } from "@/hooks/use-firebase-error"
 
 export interface User {
   id: string
@@ -15,6 +33,8 @@ interface AuthContextType {
   isLoading: boolean
   login: (email: string, password: string) => Promise<boolean>
   register: (name: string, email: string, password: string) => Promise<boolean>
+  loginWithGoogle: () => Promise<boolean>
+  resetPassword: (email: string) => Promise<boolean>
   logout: () => void
 }
 
@@ -23,6 +43,8 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   login: async () => false,
   register: async () => false,
+  loginWithGoogle: async () => false,
+  resetPassword: async () => false,
   logout: () => {},
 })
 
@@ -30,79 +52,136 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const { getErrorMessage } = useFirebaseError()
 
-  // Cargar usuario al iniciar
+  // Escuchar cambios en el estado de autenticación
   useEffect(() => {
-    const storedUser = localStorage.getItem("segundo-cerebro-user")
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser))
-      } catch (error) {
-        console.error("Error al cargar usuario:", error)
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        try {
+          // Obtener datos adicionales del usuario desde Firestore
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data()
+            const userInfo: User = {
+              id: firebaseUser.uid,
+              name: userData.name || firebaseUser.displayName || "Usuario",
+              email: firebaseUser.email || "",
+              createdAt: userData.createdAt || firebaseUser.metadata.creationTime || new Date().toISOString(),
+            }
+            setUser(userInfo)
+          } else {
+            // Si no existe el documento, crear uno básico
+            const userInfo: User = {
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || "Usuario",
+              email: firebaseUser.email || "",
+              createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
+            }
+            setUser(userInfo)
+          }
+        } catch (error) {
+          console.error("Error al obtener datos del usuario:", error)
+          // Fallback con datos básicos de Firebase Auth
+          const userInfo: User = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || "Usuario",
+            email: firebaseUser.email || "",
+            createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
+          }
+          setUser(userInfo)
+        }
+      } else {
+        setUser(null)
       }
-    }
-    setIsLoading(false)
+      setIsLoading(false)
+    })
+
+    return () => unsubscribe()
   }, [])
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulación de verificación de credenciales
-    const users = JSON.parse(localStorage.getItem("segundo-cerebro-users") || "[]")
-    const foundUser = users.find((u: any) => u.email === email && u.password === password)
-
-    if (foundUser) {
-      const userInfo: User = {
-        id: foundUser.id,
-        name: foundUser.name,
-        email: foundUser.email,
-        createdAt: foundUser.createdAt,
-      }
-      setUser(userInfo)
-      localStorage.setItem("segundo-cerebro-user", JSON.stringify(userInfo))
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
       return true
+    } catch (error: any) {
+      console.error("Error al iniciar sesión:", error)
+      throw new Error(getErrorMessage(error))
     }
-    return false
   }
 
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
-    // Verificar si el usuario ya existe
-    const users = JSON.parse(localStorage.getItem("segundo-cerebro-users") || "[]")
-    if (users.some((u: any) => u.email === email)) {
-      return false
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const firebaseUser = userCredential.user
+
+      // Actualizar el perfil con el nombre
+      await updateProfile(firebaseUser, {
+        displayName: name
+      })
+
+      // Crear documento del usuario en Firestore
+      await setDoc(doc(db, "users", firebaseUser.uid), {
+        name,
+        email,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+
+      return true
+    } catch (error: any) {
+      console.error("Error al registrar usuario:", error)
+      throw new Error(getErrorMessage(error))
     }
-
-    // Crear nuevo usuario
-    const newUser = {
-      id: Date.now().toString(),
-      name,
-      email,
-      password, // En una app real, esto debería estar hasheado
-      createdAt: new Date().toISOString(),
-    }
-
-    // Guardar usuario
-    users.push(newUser)
-    localStorage.setItem("segundo-cerebro-users", JSON.stringify(users))
-
-    // Iniciar sesión automáticamente
-    const userInfo: User = {
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      createdAt: newUser.createdAt,
-    }
-    setUser(userInfo)
-    localStorage.setItem("segundo-cerebro-user", JSON.stringify(userInfo))
-
-    return true
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem("segundo-cerebro-user")
-    router.push("/login")
+  const loginWithGoogle = async (): Promise<boolean> => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider)
+      const firebaseUser = result.user
+
+      // Verificar si el usuario ya existe en Firestore
+      const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
+      
+      if (!userDoc.exists()) {
+        // Crear documento del usuario en Firestore si es nuevo
+        await setDoc(doc(db, "users", firebaseUser.uid), {
+          name: firebaseUser.displayName || "Usuario",
+          email: firebaseUser.email || "",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+      }
+
+      return true
+    } catch (error: any) {
+      console.error("Error al iniciar sesión con Google:", error)
+      throw new Error(getErrorMessage(error))
+    }
   }
 
-  return <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>{children}</AuthContext.Provider>
+  const resetPassword = async (email: string): Promise<boolean> => {
+    try {
+      await sendPasswordResetEmail(auth, email, getActionCodeSettings())
+      return true
+    } catch (error: any) {
+      console.error("Error al enviar email de restablecimiento:", error)
+      throw new Error(getErrorMessage(error))
+    }
+  }
+
+  const logout = async () => {
+    try {
+      await signOut(auth)
+      setUser(null)
+      router.push("/login")
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error)
+    }
+  }
+
+  return <AuthContext.Provider value={{ user, isLoading, login, register, loginWithGoogle, resetPassword, logout }}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => useContext(AuthContext)

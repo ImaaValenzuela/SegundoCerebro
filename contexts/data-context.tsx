@@ -3,67 +3,49 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
-
-export interface Note {
-  id: string
-  title: string
-  content: string
-  date: string
-  tags?: string[]
-  userId: string
-}
-
-export interface Task {
-  id: string
-  title: string
-  description: string
-  completed: boolean
-  dueDate: string
-  userId: string
-}
-
-export interface CalendarEvent {
-  id: string
-  title: string
-  description: string
-  date: string // ISO string
-  type: "tarea" | "entrega" | "proyecto" | "otro"
-  color?: string
-  userId: string
-}
-
-export interface Exam {
-  id: string
-  subject: string
-  date: string // ISO string
-  goal: string // Objetivo (G de GROW)
-  reality: string // Realidad actual (R de GROW)
-  options: string[] // Opciones (O de GROW)
-  wayForward: string // Plan de acción (W de GROW)
-  completed: boolean
-  priority: "alta" | "media" | "baja"
-  userId: string
-}
+import {
+  getNotes,
+  getTasks,
+  getEvents,
+  getExams,
+  addNote as addNoteToFirestore,
+  updateNote as updateNoteInFirestore,
+  deleteNote as deleteNoteFromFirestore,
+  addTask as addTaskToFirestore,
+  updateTask as updateTaskInFirestore,
+  deleteTask as deleteTaskFromFirestore,
+  addEvent as addEventToFirestore,
+  updateEvent as updateEventInFirestore,
+  deleteEvent as deleteEventFromFirestore,
+  addExam as addExamToFirestore,
+  updateExam as updateExamInFirestore,
+  deleteExam as deleteExamFromFirestore,
+  type Note,
+  type Task,
+  type CalendarEvent,
+  type Exam
+} from "@/lib/firestore"
 
 interface DataContextType {
   notes: Note[]
   tasks: Task[]
   events: CalendarEvent[]
   exams: Exam[]
-  addNote: (note: Omit<Note, "id" | "date" | "userId">) => void
-  updateNote: (id: string, note: Partial<Note>) => void
-  deleteNote: (id: string) => void
-  addTask: (task: Omit<Task, "id" | "completed" | "userId">) => void
-  updateTask: (id: string, task: Partial<Task>) => void
-  deleteTask: (id: string) => void
-  toggleTaskCompletion: (id: string) => void
-  addEvent: (event: Omit<CalendarEvent, "id" | "userId">) => void
-  updateEvent: (id: string, event: Partial<CalendarEvent>) => void
-  deleteEvent: (id: string) => void
-  addExam: (exam: Omit<Exam, "id" | "completed" | "userId">) => void
-  updateExam: (id: string, exam: Partial<Exam>) => void
-  deleteExam: (id: string) => void
-  toggleExamCompletion: (id: string) => void
+  isLoading: boolean
+  addNote: (note: Omit<Note, "id" | "date" | "userId">) => Promise<void>
+  updateNote: (id: string, note: Partial<Note>) => Promise<void>
+  deleteNote: (id: string) => Promise<void>
+  addTask: (task: Omit<Task, "id" | "completed" | "userId">) => Promise<void>
+  updateTask: (id: string, task: Partial<Task>) => Promise<void>
+  deleteTask: (id: string) => Promise<void>
+  toggleTaskCompletion: (id: string) => Promise<void>
+  addEvent: (event: Omit<CalendarEvent, "id" | "userId">) => Promise<void>
+  updateEvent: (id: string, event: Partial<CalendarEvent>) => Promise<void>
+  deleteEvent: (id: string) => Promise<void>
+  addExam: (exam: Omit<Exam, "id" | "completed" | "userId">) => Promise<void>
+  updateExam: (id: string, exam: Partial<Exam>) => Promise<void>
+  deleteExam: (id: string) => Promise<void>
+  toggleExamCompletion: (id: string) => Promise<void>
 }
 
 const DataContext = createContext<DataContextType>({
@@ -71,20 +53,21 @@ const DataContext = createContext<DataContextType>({
   tasks: [],
   events: [],
   exams: [],
-  addNote: () => {},
-  updateNote: () => {},
-  deleteNote: () => {},
-  addTask: () => {},
-  updateTask: () => {},
-  deleteTask: () => {},
-  toggleTaskCompletion: () => {},
-  addEvent: () => {},
-  updateEvent: () => {},
-  deleteEvent: () => {},
-  addExam: () => {},
-  updateExam: () => {},
-  deleteExam: () => {},
-  toggleExamCompletion: () => {},
+  isLoading: false,
+  addNote: async () => {},
+  updateNote: async () => {},
+  deleteNote: async () => {},
+  addTask: async () => {},
+  updateTask: async () => {},
+  deleteTask: async () => {},
+  toggleTaskCompletion: async () => {},
+  addEvent: async () => {},
+  updateEvent: async () => {},
+  deleteEvent: async () => {},
+  addExam: async () => {},
+  updateExam: async () => {},
+  deleteExam: async () => {},
+  toggleExamCompletion: async () => {},
 })
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
@@ -93,6 +76,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [exams, setExams] = useState<Exam[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
   // Cargar datos al iniciar o cuando cambia el usuario
   useEffect(() => {
@@ -105,152 +89,213 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    const loadData = () => {
+    const loadData = async () => {
+      setIsLoading(true)
       try {
-        // Cargar todos los datos
-        const allNotes: Note[] = JSON.parse(localStorage.getItem("segundo-cerebro-notes") || "[]")
-        const allTasks: Task[] = JSON.parse(localStorage.getItem("segundo-cerebro-tasks") || "[]")
-        const allEvents: CalendarEvent[] = JSON.parse(localStorage.getItem("segundo-cerebro-events") || "[]")
-        const allExams: Exam[] = JSON.parse(localStorage.getItem("segundo-cerebro-exams") || "[]")
+        // Cargar todos los datos desde Firestore
+        const [notesData, tasksData, eventsData, examsData] = await Promise.all([
+          getNotes(user.id),
+          getTasks(user.id),
+          getEvents(user.id),
+          getExams(user.id)
+        ])
 
-        // Filtrar por usuario actual
-        setNotes(allNotes.filter((note) => note.userId === user.id))
-        setTasks(allTasks.filter((task) => task.userId === user.id))
-        setEvents(allEvents.filter((event) => event.userId === user.id))
-        setExams(allExams.filter((exam) => exam.userId === user.id))
+        setNotes(notesData)
+        setTasks(tasksData)
+        setEvents(eventsData)
+        setExams(examsData)
       } catch (error) {
         console.error("Error al cargar datos:", error)
+      } finally {
+        setIsLoading(false)
       }
     }
 
     loadData()
   }, [user])
 
-  // Guardar datos cuando cambien
-  useEffect(() => {
+  const addNote = async (note: Omit<Note, "id" | "date" | "userId">) => {
     if (!user) return
 
-    const saveData = (key: string, data: any[]) => {
-      try {
-        // Cargar todos los datos existentes
-        const allData = JSON.parse(localStorage.getItem(key) || "[]")
-
-        // Filtrar los datos que no son del usuario actual
-        const otherUsersData = allData.filter((item: any) => item.userId !== user.id)
-
-        // Combinar con los datos actuales del usuario
-        const newData = [...otherUsersData, ...data]
-
-        // Guardar todo
-        localStorage.setItem(key, JSON.stringify(newData))
-      } catch (error) {
-        console.error(`Error al guardar ${key}:`, error)
+    try {
+      const noteData = {
+        ...note,
+        date: new Date().toISOString(),
+        tags: note.tags || [],
+        userId: user.id,
       }
+      
+      const newNoteId = await addNoteToFirestore(noteData)
+      const newNote: Note = {
+        ...noteData,
+        id: newNoteId,
+      }
+      
+      setNotes((prev) => [newNote, ...prev])
+    } catch (error) {
+      console.error("Error al agregar nota:", error)
     }
+  }
 
-    if (notes.length > 0) {
-      saveData("segundo-cerebro-notes", notes)
+  const updateNote = async (id: string, note: Partial<Note>) => {
+    try {
+      await updateNoteInFirestore(id, note)
+      setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...note } : n)))
+    } catch (error) {
+      console.error("Error al actualizar nota:", error)
     }
+  }
 
-    if (tasks.length > 0) {
-      saveData("segundo-cerebro-tasks", tasks)
+  const deleteNote = async (id: string) => {
+    try {
+      await deleteNoteFromFirestore(id)
+      setNotes((prev) => prev.filter((n) => n.id !== id))
+    } catch (error) {
+      console.error("Error al eliminar nota:", error)
     }
+  }
 
-    if (events.length > 0) {
-      saveData("segundo-cerebro-events", events)
-    }
-
-    if (exams.length > 0) {
-      saveData("segundo-cerebro-exams", exams)
-    }
-  }, [notes, tasks, events, exams, user])
-
-  const addNote = (note: Omit<Note, "id" | "date" | "userId">) => {
+  const addTask = async (task: Omit<Task, "id" | "completed" | "userId">) => {
     if (!user) return
 
-    const newNote: Note = {
-      ...note,
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      tags: note.tags || [],
-      userId: user.id,
+    try {
+      const taskData = {
+        ...task,
+        userId: user.id,
+      }
+      
+      const newTaskId = await addTaskToFirestore(taskData)
+      const newTask: Task = {
+        ...taskData,
+        id: newTaskId,
+        completed: false,
+      }
+      
+      setTasks((prev) => [newTask, ...prev])
+    } catch (error) {
+      console.error("Error al agregar tarea:", error)
     }
-    setNotes((prev) => [...prev, newNote])
   }
 
-  const updateNote = (id: string, note: Partial<Note>) => {
-    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...note } : n)))
+  const updateTask = async (id: string, task: Partial<Task>) => {
+    try {
+      await updateTaskInFirestore(id, task)
+      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...task } : t)))
+    } catch (error) {
+      console.error("Error al actualizar tarea:", error)
+    }
   }
 
-  const deleteNote = (id: string) => {
-    setNotes((prev) => prev.filter((n) => n.id !== id))
+  const deleteTask = async (id: string) => {
+    try {
+      await deleteTaskFromFirestore(id)
+      setTasks((prev) => prev.filter((t) => t.id !== id))
+    } catch (error) {
+      console.error("Error al eliminar tarea:", error)
+    }
   }
 
-  const addTask = (task: Omit<Task, "id" | "completed" | "userId">) => {
+  const toggleTaskCompletion = async (id: string) => {
+    try {
+      const task = tasks.find(t => t.id === id)
+      if (task) {
+        await updateTaskInFirestore(id, { completed: !task.completed })
+        setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)))
+      }
+    } catch (error) {
+      console.error("Error al cambiar estado de tarea:", error)
+    }
+  }
+
+  const addEvent = async (event: Omit<CalendarEvent, "id" | "userId">) => {
     if (!user) return
 
-    const newTask: Task = {
-      ...task,
-      id: Date.now().toString(),
-      completed: false,
-      userId: user.id,
+    try {
+      const eventData = {
+        ...event,
+        userId: user.id,
+      }
+      
+      const newEventId = await addEventToFirestore(eventData)
+      const newEvent: CalendarEvent = {
+        ...eventData,
+        id: newEventId,
+      }
+      
+      setEvents((prev) => [newEvent, ...prev])
+    } catch (error) {
+      console.error("Error al agregar evento:", error)
     }
-    setTasks((prev) => [...prev, newTask])
   }
 
-  const updateTask = (id: string, task: Partial<Task>) => {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...task } : t)))
+  const updateEvent = async (id: string, event: Partial<CalendarEvent>) => {
+    try {
+      await updateEventInFirestore(id, event)
+      setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...event } : e)))
+    } catch (error) {
+      console.error("Error al actualizar evento:", error)
+    }
   }
 
-  const deleteTask = (id: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id))
+  const deleteEvent = async (id: string) => {
+    try {
+      await deleteEventFromFirestore(id)
+      setEvents((prev) => prev.filter((e) => e.id !== id))
+    } catch (error) {
+      console.error("Error al eliminar evento:", error)
+    }
   }
 
-  const toggleTaskCompletion = (id: string) => {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)))
-  }
-
-  const addEvent = (event: Omit<CalendarEvent, "id" | "userId">) => {
+  const addExam = async (exam: Omit<Exam, "id" | "completed" | "userId">) => {
     if (!user) return
 
-    const newEvent: CalendarEvent = {
-      ...event,
-      id: Date.now().toString(),
-      userId: user.id,
+    try {
+      const examData = {
+        ...exam,
+        userId: user.id,
+      }
+      
+      const newExamId = await addExamToFirestore(examData)
+      const newExam: Exam = {
+        ...examData,
+        id: newExamId,
+        completed: false,
+      }
+      
+      setExams((prev) => [newExam, ...prev])
+    } catch (error) {
+      console.error("Error al agregar examen:", error)
     }
-    setEvents((prev) => [...prev, newEvent])
   }
 
-  const updateEvent = (id: string, event: Partial<CalendarEvent>) => {
-    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...event } : e)))
-  }
-
-  const deleteEvent = (id: string) => {
-    setEvents((prev) => prev.filter((e) => e.id !== id))
-  }
-
-  const addExam = (exam: Omit<Exam, "id" | "completed" | "userId">) => {
-    if (!user) return
-
-    const newExam: Exam = {
-      ...exam,
-      id: Date.now().toString(),
-      completed: false,
-      userId: user.id,
+  const updateExam = async (id: string, exam: Partial<Exam>) => {
+    try {
+      await updateExamInFirestore(id, exam)
+      setExams((prev) => prev.map((e) => (e.id === id ? { ...e, ...exam } : e)))
+    } catch (error) {
+      console.error("Error al actualizar examen:", error)
     }
-    setExams((prev) => [...prev, newExam])
   }
 
-  const updateExam = (id: string, exam: Partial<Exam>) => {
-    setExams((prev) => prev.map((e) => (e.id === id ? { ...e, ...exam } : e)))
+  const deleteExam = async (id: string) => {
+    try {
+      await deleteExamFromFirestore(id)
+      setExams((prev) => prev.filter((e) => e.id !== id))
+    } catch (error) {
+      console.error("Error al eliminar examen:", error)
+    }
   }
 
-  const deleteExam = (id: string) => {
-    setExams((prev) => prev.filter((e) => e.id !== id))
-  }
-
-  const toggleExamCompletion = (id: string) => {
-    setExams((prev) => prev.map((e) => (e.id === id ? { ...e, completed: !e.completed } : e)))
+  const toggleExamCompletion = async (id: string) => {
+    try {
+      const exam = exams.find(e => e.id === id)
+      if (exam) {
+        await updateExamInFirestore(id, { completed: !exam.completed })
+        setExams((prev) => prev.map((e) => (e.id === id ? { ...e, completed: !e.completed } : e)))
+      }
+    } catch (error) {
+      console.error("Error al cambiar estado de examen:", error)
+    }
   }
 
   return (
@@ -260,6 +305,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         tasks,
         events,
         exams,
+        isLoading,
         addNote,
         updateNote,
         deleteNote,
