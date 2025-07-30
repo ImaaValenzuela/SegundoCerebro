@@ -64,3 +64,141 @@
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 300ms;
 }
+
+/* Animaciones personalizadas para la barra de navegación */
+@layer components {
+  .sidebar-expand {
+    animation: sidebarExpand 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar-collapse {
+    animation: sidebarCollapse 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-item-hover {
+    @apply relative overflow-hidden;
+  }
+
+  .nav-item-hover::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 transition-opacity duration-200;
+  }
+
+  .nav-item-hover:hover::before {
+    @apply opacity-100;
+  }
+
+  /* Efecto de brillo en hover */
+  .glow-on-hover {
+    @apply relative overflow-hidden;
+  }
+
+  .glow-on-hover::after {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full transition-transform duration-500;
+  }
+
+  .glow-on-hover:hover::after {
+    @apply translate-x-full;
+  }
+
+  /* Animación de entrada para elementos */
+  .fade-in-up {
+    animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fade-in-left {
+    animation: fadeInLeft 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Scrollbar personalizada */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground)) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground));
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--foreground));
+  }
+}
+
+/* Keyframes para animaciones */
+@keyframes sidebarExpand {
+  from {
+    width: 4rem;
+    opacity: 0.8;
+  }
+  to {
+    width: 16rem;
+    opacity: 1;
+  }
+}
+
+@keyframes sidebarCollapse {
+  from {
+    width: 16rem;
+    opacity: 1;
+  }
+  to {
+    width: 4rem;
+    opacity: 0.8;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Efectos de hover mejorados */
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.hover-scale {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* Backdrop blur para overlays */
+.backdrop-blur-custom {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
